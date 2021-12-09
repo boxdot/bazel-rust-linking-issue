@@ -1,0 +1,39 @@
+load("@rules_rust//rust:defs.bzl", "rust_static_library", "rust_binary")
+
+# rust library which exposes C FFI
+rust_static_library(
+    name = "rust_c_lib",
+    srcs = ["src/lib.rs"],
+    edition = "2021",
+    visibility = ["//visibility:public"],
+)
+
+# rust binary which links to the rust C lib and uses the FFI
+#
+# Does not work: symbols not found;
+#
+# rust_c_lib is not in the linker flags; additionally its name has a suffix
+# containing some hash number.
+rust_binary(
+    name = "rust_binary",
+    srcs = ["src/main.rs"],
+    deps = [":rust_c_lib"],
+    edition = "2021",
+    visibility = ["//visibility:public"],
+)
+
+# As workaround we create a C lib linking to the rust C lib
+cc_library(
+    name = "c_lib",
+    deps = [":rust_c_lib"],
+    visibility = ["//visibility:public"],
+)
+
+# Works!
+rust_binary(
+    name = "rust_binary_workaround",
+    srcs = ["src/main.rs"],
+    deps = [":c_lib"],
+    edition = "2021",
+    visibility = ["//visibility:public"],
+)
